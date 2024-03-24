@@ -1,8 +1,8 @@
 {% extends "layout.html" %}
 
-{% block title %}{% endblock %}
+{% block title %}Home{% endblock %}
 
-{% block page %}{% endblock %}
+{% block page %}Home{% endblock %}
 
 {% block link%}
 <ul id="nav-mobile" class="right">
@@ -25,7 +25,10 @@
 {% block content %}
 <div class="row">
     <div class="col m3 list-container collection" style="max-height: 88vh;">
-  
+        <!-- Collection of Pokemon Links -->
+        {% for pokemon in all_pokemon %}
+            <a href="/app/{{ pokemon.id }}#poke-{{ pokemon.id }}" id="poke-{{ pokemon.id }}" class="collection-item {% if selected_pokemon.id == pokemon.id %}active white-text{% else %}black-text{% endif %}">{{ pokemon.name }}</a>
+        {% endfor %}
     </div>
     
     <div class="col m3">
@@ -33,9 +36,30 @@
             <p class="text-center">Selected Pokemon</p>
 
             <div id="pokemon-detail">
-                 <!-- Show pokemon details here -->
-            </div>
+                <!-- Show pokemon details here -->
+                {% if selected_pokemon %}        
+                    <div class="card">
+                        <div class="card-image">
+                            <img src="https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/{{ selected_pokemon.id }}.png" >
+                            <span class="card-title">{{ selected_pokemon.name }}</span>
+                        </div>
+                        <div class="card-content">
+                            <p>{{ selected_pokemon.name }}</p>
+                            <p>Type1: {{ selected_pokemon.type1 }}</p>
+                            <p>{% if selected_pokemon.type2 %}Type2: {{ selected_pokemon.type2 }}{% else %}Type2: None{% endif %}</p>
+                            <p>Weight: {{ selected_pokemon.weight }} kg</p>
+                            <p>Height: {{ selected_pokemon.height }} m</p>
+                        </div>
+                    </div>
+                {% endif %}
 
+                <form action="{{ url_for('capture_action', pokemon_id=selected_pokemon.id) }}" method="POST">
+                    <input type="hidden" name="pokemon_id" value="{{ selected_pokemon.id }}">
+                    <input type="text" id="pokemon_name" name="pokemon_name" placeholder=" " >
+                    <input class="btn red" id="captureBtn" type="submit" value="CAPTURE" />
+                </form>
+                 
+            </div>
     </div>
 
     <div class="col m6" >
@@ -50,13 +74,27 @@
                 </tr>
             </thead>
             <tbody>
-              <!-- show captured pokemon here with controls to rename and release for each pokemon -->
+            <!-- show captured pokemon here with controls to rename and release for each pokemon -->
+            {% for user_pokemon in current_user.pokemon %}
+                <tr>
+                    <td>{{ user_pokemon.pokemon.name }}</td>
+                    <td>{{ user_pokemon.name }}</td>
+                    <td>
+                        <form action="{{ url_for('rename_action', pokemon_id=user_pokemon.id) }}" method="POST">
+                            <input type="text" id="{{ user_pokemon.name }}_new-name" name="new_name" > 
+                            <input class="btn teal right" id="rename-{{ user_pokemon.name }}" type="submit" value="RENAME" style="margin-right: 5px;"/>
+                        </form>                        
+                        <form action="{{ url_for('release_action', pokemon_id=user_pokemon.id) }}" method="GET">
+                            <input class="btn teal right" id="release-{{ user_pokemon.name }}" type="submit" value="RELEASE" style="margin-right: 5px;"/>
+                        </form>
+                    </td>
+                </tr>
+            {% endfor %}
+
             </tbody>
         </table>
     </div>
 
 </div>
-
-
 
 {% endblock %}
