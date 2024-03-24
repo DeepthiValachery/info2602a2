@@ -122,32 +122,66 @@ def logout_action():
 @jwt_required()
 def home_page(pokemon_id=1):
     # update pass relevant data to template
-    return render_template("home.html")
+    all_pokemon = Pokemon.query.all()
+    selected_pokemon = Pokemon.query.get(pokemon_id)
+
+    return render_template("home.html", current_user=current_user, all_pokemon=all_pokemon, selected_pokemon=selected_pokemon)
 
 # Action Routes (To Update)
 
 @app.route("/login", methods=['POST'])
 def login_action():
-  # implement login
-  return "Login Action"
+  data = request.form
+  token = login_user(data['username'], data['password'])
+  
+  response = None
+
+  if token:
+    #flash('Logged in successfully.')
+    response = redirect(url_for('home_page'))
+    set_access_cookies(response, token)
+  else:
+    flash('Invalid username or password')
+    response = redirect(url_for('login_page'))
+  return response
 
 @app.route("/pokemon/<int:pokemon_id>", methods=['POST'])
 @jwt_required()
 def capture_action(pokemon_id):
-  # implement save newly captured pokemon, show a message then reload page
-  return redirect(request.referrer)
+    pokemon_name = request.form['pokemon_name']
+    user_pokemon = UserPokemon(user_id=current_user.id, pokemon_id=pokemon_id, name=pokemon_name)
+    db.session.add(user_pokemon)
+    db.session.commit()
+
+    return redirect(url_for('home_page'))
 
 @app.route("/rename-pokemon/<int:pokemon_id>", methods=['POST'])
 @jwt_required()
 def rename_action(pokemon_id):
-  # implement rename pokemon, show a message then reload page
-  return redirect(request.referrer)
+    new_name = request.form['new_name']
+
+    user_pokemon = UserPokemon.query.get(pokemon_id)
+    
+    if user_pokemon:
+        user_pokemon.name = new_name
+        db.session.commit()
+        return redirect(url_for('home_page'))
+    else:
+        flash('Pokemon not found')
+        return redirect(url_for('home_page'))
 
 @app.route("/release-pokemon/<int:pokemon_id>", methods=['GET'])
 @jwt_required()
 def release_action(pokemon_id):
-  # implement release pokemon, show a message then reload page
-  return redirect(request.referrer)
+    user_pokemon = UserPokemon.query.get(pokemon_id)
+    
+    if user_pokemon:
+        db.session.delete(user_pokemon)
+        db.session.commit()
+        return redirect(url_for('home_page'))
+    else:
+        flash('Pokemon not found')
+        return redirect(url_for('home_page'))
 
 if __name__ == "__main__":
   app.run(host='0.0.0.0', port=8080)
